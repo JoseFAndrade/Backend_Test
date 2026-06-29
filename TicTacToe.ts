@@ -1,5 +1,7 @@
 export class TicTacToe{
     private grid: number[][];
+
+    //turn is either 0 or 1
     private turn: number; //the number will correspond to the chip as well |an outer function will dictate this
 
 
@@ -20,6 +22,16 @@ export class TicTacToe{
 
     getGrid(){
         return this.grid;
+    }
+
+    /**
+     * This function will check if a move is possible. It will return true if its possible, false if its not
+     * @param x A number reflecting rows
+     * @param y A number reflecting what column
+     * @param color A number reflecting what shape/color (depends on how the front end chooses to show this off)
+     */
+    checkMove(x: number, y:number, color: number){
+        return this.grid[x][y] == -1;
     }
 
     //this function will return whether there is still playable options on the board

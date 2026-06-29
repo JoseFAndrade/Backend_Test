@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-//import {TicTacToe} from "./TicTacToe.js";
+//import {TicTacToe} from "./TicTacToe.ts";
 
 const app = express();
 app.use(cors());
