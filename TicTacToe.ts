@@ -20,6 +20,17 @@ export class TicTacToe{
         this.grid[x][y] = turn;
     }
 
+    swithTurn(){
+        if(this.turn === 1)
+            this.turn = 0
+        else
+            this.turn = 1;
+    }
+
+    getTurn(){
+        return this.turn;
+    }
+
     getGrid(){
         return this.grid;
     }

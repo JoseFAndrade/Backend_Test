@@ -15,6 +15,9 @@ const io = new Server(server, {cors: {origin: '*', methods: ['GET', 'POST']}});
 
 const game: TicTacToe = new TicTacToe();
 
+//map is structure of roomId : gameManager
+
+const gameRooms = new Map();
 /*TODO
     -add verification to the backend server where it needs to confirm if a user is able to make a move
         -make sure its actually their turn
@@ -22,11 +25,12 @@ const game: TicTacToe = new TicTacToe();
         -need to figure this out over time
     -after we are done with using postman as a testing service
         -integrate needing to check if a socket is within the room that they want to make a move in
+        -assign sockets to a specific player
         -currently not using it because it would mess with testing out the postman since front end is not done yet
     -figure out when is the right time to do a room wide response vs a socket response
         -do i let the entire room know of the move the opponent tried to make that is not possible?
             -maybe we let this one be just for the socket
-                -integrate this after postman is removed due to the limiting factors in easy testing
+                -integrate this after postman is removed due to the limiting factors in easy 8testing
     ---------------
     what is done
         - backend able to detect when a game has ended and respond
@@ -64,6 +68,10 @@ io.on('connection', (socket) => {
         console.log("game move");
         if(!game.checkPlayable())
             io.in(id).emit("game_update:game-end", "The game has ended and there are no more actions left", game.checkWin());
+        else if(game.getTurn() === moveInfo[1]){
+            //TODO need to make sure to test out how to do this in a different ways | socket checking but after postman
+            socket.emit("game_update:illegal-move", "Please wait for your turn. It is not your turn yet");
+        }
         else{
             var position = moveInfo[0];
             var color = moveInfo[1];
