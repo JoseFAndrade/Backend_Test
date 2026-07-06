@@ -4,6 +4,7 @@ import { Server, Socket } from 'socket.io';
 // @ts-ignore
 import cors from 'cors';
 import {TicTacToe} from "./TicTacToe";
+import {GameManager} from "./GameManager";
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:3000' })); // Match with your frontend URL
@@ -13,11 +14,11 @@ const server = createServer(app);
 
 const io = new Server(server, {cors: {origin: '*', methods: ['GET', 'POST']}});
 
-const game: TicTacToe = new TicTacToe();
+//const game: TicTacToe = new TicTacToe();
 
-//map is structure of roomId : gameManager
+//map is structure of roomId : game: gameManager players: []
 
-const gameRooms = new Map();
+const gameRooms = new Map<String, GameManager>();
 /*TODO
     -add verification to the backend server where it needs to confirm if a user is able to make a move
         -make sure its actually their turn
@@ -50,36 +51,50 @@ io.on('connection', (socket) => {
         console.log(data);
         socket.join(id);
 
-        socket.emit("room:created", "Room has been created");
+        if(!gameRooms.has(id)){
+            socket.emit("room:created", "Room has been created");
+            gameRooms.set( id, new GameManager(id, socket.id, new TicTacToe()));
+        }
+        else{
+            socket.emit("room:error", "The room already exists. Try to join this room instead.")
+        }
 
-        socket.to(id).emit("room:player-joined", "a player has joined the room");
+
+        //socket.emit("room:created", "Room has been created");
+
+        //socket.to(id).emit("room:player-joined", "a player has joined the room");
     });
 
     socket.on("joinRoom", ({id, data}) => {
-        console.log("join room ran");
-        socket.join(id);
-        socket.emit("player:joined-room", {board: game.getGrid()});
-        socket.to(id).emit("room:player-joined", "a player has joined the room");
+        if(countInRoom(id) >= 2){
+            console.log("Room is full");
+            socket.emit("room:full-players", "Sorry but the room is currently full");
+        }
+        else{
+            console.log("join room ran");
+            socket.join(id);
+            socket.emit("player:joined-room", {board: gameRooms.get(id).game.getGrid()});
+            socket.to(id).emit("room:player-joined", "a player has joined the room");
+        }
     });
 
     //this socket will handle game moves
     //going to assume for now that move info is some sort of [[x,y], turnNumber]
     socket.on("gameMove", ({id, moveInfo}) => {
+        let manager = gameRooms.get(id);
+        let game = manager.game;
         console.log("game move");
         if(!game.checkPlayable())
             io.in(id).emit("game_update:game-end", "The game has ended and there are no more actions left", game.checkWin());
-        else if(game.getTurn() === moveInfo[1]){
+        //else if(game.getTurn() === moveInfo[1]){
+        else if(manager.getPlayerTurn() === socket.id) //check to make sure that the current players turn socket id is the same as the msg socket id
             //TODO need to make sure to test out how to do this in a different ways | socket checking but after postman
             socket.emit("game_update:illegal-move", "Please wait for your turn. It is not your turn yet");
-        }
         else{
             var position = moveInfo[0];
             var color = moveInfo[1];
 
-            if(!game.checkPlayable()){
-                io.in(id).emit("game_update:game-end", "The game has ended and there are no more actions left", game.checkWin());
-            }
-            else if(!game.checkMove(position[0], position[1], color)){
+            if(!game.checkMove(position[0], position[1], color)){
                 //add move details to the response
                 io.in(id).emit("game_update:invalid-move", "The move is invalid because the select position is not open.",
                     moveInfo);
@@ -89,11 +104,7 @@ io.on('connection', (socket) => {
                 io.in(id).emit("game_update:game-move", game.getGrid());
             }
         }
-
     })
-
-
-
     socket.emit("test event", "test data");
 })
 
@@ -102,3 +113,6 @@ server.listen(3000, () => {
     console.log("socket io server is listening");
 })
 
+function countInRoom(room) {
+    return io.of("/").adapter.rooms.get(room)?.size || 0;
+}
