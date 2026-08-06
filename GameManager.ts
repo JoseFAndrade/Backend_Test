@@ -18,9 +18,10 @@ export class GameManager{
         this._turn = Math.floor(Math.random() * 2) + 1;
     }
 
-    addPlayer(p1: any){
+    addPlayer(p: any){
+        console.log(this._players.length);
         if(this._players.length < 2)
-            this._players.push(p1);
+            this._players.push(p);
         else
             throw Error();
     }
@@ -32,6 +33,7 @@ export class GameManager{
 
         this._turn = playerTurn;
     }
+
 
 
 
@@ -59,7 +61,7 @@ export class GameManager{
         return true;
     }
 
-    get game(): TicTacToe {
+    get getGame(): TicTacToe {
         return this._game;
     }
 

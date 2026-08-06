@@ -39,9 +39,10 @@ export class TicTacToe{
      * This function will check if a move is possible. It will return true if its possible, false if its not
      * @param x A number reflecting rows
      * @param y A number reflecting what column
-     * @param color A number reflecting what shape/color (depends on how the front end chooses to show this off)
+     * @param userId A number reflecting the id of the user who is making the move
      */
-    checkMove(x: number, y:number, color: number){
+    //todo I need to start to move these things over to the game manager because that is what will be in charge of all of this
+    checkMove(x: number, y:number, userId: number){
         return this.grid[x][y] == -1;
     }
 
