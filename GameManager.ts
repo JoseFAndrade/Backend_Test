@@ -15,7 +15,9 @@ export class GameManager{
         this._roomID = roomID;
         this._players.push(p1);
         this._game = game;
-        this._turn = Math.floor(Math.random() * 2) + 1;
+        this._turn = Math.round(Math.random());
+
+        console.log("The turn generated has been: " + this._turn);
     }
 
     addPlayer(p: any){
@@ -24,6 +26,8 @@ export class GameManager{
             this._players.push(p);
         else
             throw Error();
+
+        console.log(this._players);
     }
 
     setStartingTurn(playerTurn: number){
@@ -44,7 +48,7 @@ export class GameManager{
             this._turn = 1;
     }
 
-    getPlayerTurn(){
+    getPlayerTurn(): string{
         return this._players[this._turn];
     }
 

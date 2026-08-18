@@ -84,8 +84,11 @@ io.on('connection', (socket) => {
                 gameRooms.get(id).addPlayer(socket.id);
                 //send the data to the client about the board
                 socket.emit("player:joined-room", {board: gameRooms.get(id).getGame.getGrid()});
-                socket.to(id.toString()).emit("room:player-joined", "a player has joined the room");
+                console.log(socket.id);
+                socket.to(id.toString()).emit("room:player-joined", socket.id,  "A player has joined the room");
                 callback({status:'ok', message: "You have successfully joined the room."});
+
+                io.in(id.toString()).emit("game_update:first-player", gameRooms.get(id).getPlayerTurn());
             }
 
         }
@@ -95,18 +98,26 @@ io.on('connection', (socket) => {
     //going to assume for now that move info is some sort of [[x,y], turnNumber]
     socket.on("gameMove", (id: number, moveInfo, callback) => {
 
+        console.log("game move ran");
         let manager = gameRooms.get(id);
         let game = manager.getGame;
 
+        console.log(manager.getPlayerTurn());
+        console.log(typeof manager.getPlayerTurn());
+        console.log(socket.id);
+        console.log(typeof socket.id);
 
-        if(!game.checkPlayable()) {
+        if(manager.players.length !== 2){
+            callback({status: "error-two", message:"Not enough players"});
+        }
+        else if(!game.checkPlayable()) {
             callback({status:"error", message: "The game has ended"});
 
             //update the lobby in game ended state
-            io.in(id.toString()).emit("game_update:game-end", "The game has ended and there are no more actions left", game.checkWin());
+            io.in(id.toString()).emit("game_update:game-end", game.checkWin(), "The game has ended and there are no more actions left");
         }
         //else if(game.getTurn() === moveInfo[1]){
-        else if(manager.getPlayerTurn() === socket.id) { //check to make sure that the current players turn socket id is the same as the msg socket id
+        else if(!(manager.getPlayerTurn() === socket.id.trim())) { //check to make sure that the current players turn socket id is the same as the msg socket id
             //TODO need to make sure to test out how to do this in a different ways | socket checking but after postman
             callback({status: 'error', message: "Please wait your turn"});
             //socket.emit("game_update:illegal-move", "Please wait for your turn. It is not your turn yet");
@@ -122,12 +133,13 @@ io.on('connection', (socket) => {
                 callback({status: "error", message: "The move that you are trying to make is invalid."});
             }
             else { //the piece is placeable | update game | send update to connected sockets with room id
+
                 game.setPiece(x,y, playerId);
                 callback({status: "ok", message: "The move was successful."});
-
+                manager.swapTurn();
                 //update the room with the move
                 //io.to(id.toString()).emit("game_update:game-move", "testing");
-                io.in(id.toString()).emit("game_update:game-move", game.getGrid(), x, y, "the player: " + playerId +" has successfully made a move");
+                io.in(id.toString()).emit("game_update:game-move", game.getGrid(), x, y, playerId,  "the player: " + playerId +" has successfully made a move");
             }
         }
     })
