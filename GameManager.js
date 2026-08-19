@@ -1,12 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameManager = void 0;
-/**TODO
- *  - integrate sockets id into the player data
- */
-var GameManager = /** @class */ (function () {
+var GameManager = (function () {
     function GameManager(roomID, p1, game) {
-        //player 1 corresponds to the first member in this list
         this._players = [];
         this._roomID = roomID;
         this._players.push(p1);
@@ -37,11 +33,6 @@ var GameManager = /** @class */ (function () {
     GameManager.prototype.getPlayerTurn = function () {
         return this._players[this._turn];
     };
-    /**
-     * This function will return true if a move was made and false if it was unable to make a move
-     * @param x A number in the grid coordinate
-     * @param y A number in the grid coordinate
-     */
     GameManager.prototype.playMove = function (x, y) {
         if (!this._game.checkPlayable()) {
             return false;
@@ -80,3 +71,4 @@ var GameManager = /** @class */ (function () {
     return GameManager;
 }());
 exports.GameManager = GameManager;
+//# sourceMappingURL=GameManager.js.map

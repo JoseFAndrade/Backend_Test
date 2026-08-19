@@ -14,5 +14,8 @@
     "morgan": "^1.11.0",
     "pug": "^2.0.4",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
   }
 }

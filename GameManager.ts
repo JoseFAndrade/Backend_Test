@@ -8,7 +8,7 @@ export class GameManager{
     private _roomID;
 
     //player 1 corresponds to the first member in this list
-    private _players = [];
+    private _players: any[] = [];
     private _turn:number;
 
     constructor(roomID: any, p1: any, game:TicTacToe) {

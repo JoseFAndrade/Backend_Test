@@ -66,7 +66,7 @@ io.on('connection', (socket) => {
 
     //we need to keep the emit here because its going to be necessary for the receiving of data to happen
     socket.on("joinRoom", (id: number, callback ) => {
-        if(countInRoom(id) >= 2){
+        if(countInRoom(String(id)) >= 2){
             console.log("Room is full");
             callback({status: "error", message: "The room is currently full of players. Either try to create or join another room."})
             //socket.emit("room:full-players", "Sorry but the room is currently full");
@@ -150,6 +150,7 @@ server.listen(3000, () => {
     console.log("socket io server is listening");
 })
 
-function countInRoom(room) {
+
+function countInRoom(room: string) {
     return io.of("/").adapter.rooms.get(room)?.size || 0;
 }
