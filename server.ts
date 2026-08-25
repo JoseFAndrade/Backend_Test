@@ -140,6 +140,7 @@ io.on('connection', (socket) => {
                 //update the room with the move
                 //io.to(id.toString()).emit("game_update:game-move", "testing");
                 io.in(id.toString()).emit("game_update:game-move", game.getGrid(), x, y, playerId,  "the player: " + playerId +" has successfully made a move");
+                io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
             }
         }
     })

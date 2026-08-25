@@ -90,6 +90,7 @@ io.on('connection', function (socket) {
                 callback({ status: "ok", message: "The move was successful." });
                 manager.swapTurn();
                 io.in(id.toString()).emit("game_update:game-move", game.getGrid(), x, y, playerId, "the player: " + playerId + " has successfully made a move");
+                io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
             }
         }
     });
