@@ -56,19 +56,23 @@ var TicTacToe = (function () {
         }
         console.log("check within a row");
         for (var i = 0; i <= 2; i++) {
+            console.log("x");
             var continues = true;
-            var prev = -1;
+            var prev = -2;
             for (var y = 0; y <= 2; y++) {
-                if (prev === -1 || this.grid[y][i] === prev) {
+                if (prev === -2 || this.grid[y][i] === prev) {
                     prev = this.grid[y][i];
                 }
                 else {
+                    console.log("break");
                     continues = false;
                     break;
                 }
             }
-            if (continues)
+            if (continues) {
+                console.log("this is the issue");
                 return prev;
+            }
         }
         if (this.grid[0][0] === this.grid[1][1] && this.grid[1][1] === this.grid[2][2])
             return this.grid[0][0];

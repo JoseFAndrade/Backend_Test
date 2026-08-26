@@ -88,19 +88,24 @@ export class TicTacToe{
         console.log("check within a row")
         //check within a column
         for(let i = 0; i <= 2; i++){
+            console.log("x");
             let continues: boolean = true;
-            let prev = -1;
+            let prev = -2;
             for(let y = 0; y <= 2; y++){
-                if(prev === -1 || this.grid[y][i] === prev){
+                if(prev === -2 || this.grid[y][i] === prev){
                     prev = this.grid[y][i];
                 }
                 else{
+                    console.log("break");
                     continues = false;
                     break;
                 }
             }
-            if(continues)
+            if(continues){
+                console.log("this is the issue");
                 return prev;
+
+            }
         }
 
         //check diagonal -> just going to hard code it for now because its a 3 by 3
