@@ -25,12 +25,10 @@ io.on('connection', function (socket) {
         console.log("create room ran");
         console.log(id);
         if (!gameRooms.has(id)) {
-            console.log("unique");
-            console.log("Room has the id: " + id);
-            console.log("the id of who joined was: " + socket.id);
             socket.join(id.toString());
             gameRooms.set(id, new GameManager_1.GameManager(id, socket.id, new TicTacToe_1.TicTacToe()));
             callback({ status: "ok", message: "Room created with roomId: " + id });
+            socket.data.room = id;
         }
         else {
             console.log("throw error");
@@ -60,8 +58,15 @@ io.on('connection', function (socket) {
             }
         }
     });
+    socket.on("disconnecting", function () {
+        gameRooms.delete(socket.data.room);
+    });
     socket.on("gameMove", function (id, moveInfo, callback) {
         console.log("game move ran");
+        if (!gameRooms.has(id)) {
+            callback({ status: 'error-connection', message: "The connection to the main client has dropped" });
+            return;
+        }
         var manager = gameRooms.get(id);
         var game = manager.getGame;
         console.log(manager.getPlayerTurn());

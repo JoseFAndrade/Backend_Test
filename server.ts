@@ -50,13 +50,12 @@ io.on('connection', (socket) => {
         console.log(id);
 
         if(!gameRooms.has(id)){
-            console.log("unique");
-            console.log("Room has the id: " + id);
-            console.log("the id of who joined was: " + socket.id);
+
             socket.join(id.toString());
             //socket.emit("room:created", {roomId: 1, message: "Room has been created"});
             gameRooms.set( id, new GameManager(id, socket.id, new TicTacToe()) );
             callback({status: "ok", message: "Room created with roomId: " + id});
+            socket.data.room = id;
         }
         else{
             console.log("throw error");
@@ -94,11 +93,22 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on("disconnecting", () => {
+        gameRooms.delete(socket.data.room);
+    });
+
     //this socket will handle game moves
     //going to assume for now that move info is some sort of [[x,y], turnNumber]
     socket.on("gameMove", (id: number, moveInfo, callback) => {
 
         console.log("game move ran");
+
+        // a check to see if the game room does not exist -> this will only ever run if there is some sort of disconnect issue with the host
+        if(!gameRooms.has(id)){
+            callback({status: 'error-connection', message: "The connection to the main client has dropped"});
+            return;
+        }
+
         let manager = gameRooms.get(id);
         let game = manager.getGame;
 
