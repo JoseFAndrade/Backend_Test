@@ -13,10 +13,26 @@ var app = (0, express_1.default)();
 app.use((0, cors_1.default)({ origin: 'http://localhost:3000' }));
 app.use(express_1.default.json());
 var server = (0, http_1.createServer)(app);
-var io = new socket_io_1.Server(server, { cors: { origin: '*', methods: ['GET', 'POST'] } });
+var io = new socket_io_1.Server(server, { cors: { origin: '*', methods: ['GET', 'POST'] },
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    connectionStateRecovery: {
+        maxDisconnectionDuration: 60 * 1000,
+        skipMiddlewares: true,
+    } });
+var activeTimeouts = new Map();
 var gameRooms = new Map();
 io.on('connection', function (socket) {
     console.log("a user has connected");
+    if (socket.recovered) {
+        var timeoutId = activeTimeouts.get(socket.id);
+        console.log("socket recovered");
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            activeTimeouts.delete(socket.id);
+            console.log("Client ".concat(socket.id, " reconnected in time. Cleanup canceled."));
+        }
+    }
     socket.on("test", function (arg) {
         console.log("1");
         socket.emit("yes", "yes");
@@ -58,8 +74,20 @@ io.on('connection', function (socket) {
             }
         }
     });
-    socket.on("disconnecting", function () {
-        gameRooms.delete(socket.data.room);
+    socket.on("disconnecting", function (reason) {
+        console.log("disconnected");
+        console.log(reason);
+        if (reason === "transport close" || reason === "ping timeout") {
+            console.log("hmmm");
+            var timeoutId = setTimeout(function () {
+                gameRooms.delete(socket.data.room);
+                activeTimeouts.delete(socket.id);
+            }, 60000);
+            activeTimeouts.set(socket.id, timeoutId);
+        }
+        else {
+            gameRooms.delete(socket.data.room);
+        }
     });
     socket.on("gameMove", function (id, moveInfo, callback) {
         console.log("game move ran");

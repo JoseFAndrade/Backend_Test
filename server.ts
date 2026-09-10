@@ -12,11 +12,18 @@ app.use(express.json());
 
 const server = createServer(app);
 
-const io = new Server(server, {cors: {origin: '*', methods: ['GET', 'POST']}});
+const io = new Server(server, {cors: {origin: '*', methods: ['GET', 'POST']},
+    pingTimeout: 60000,   // Increase ping timeout to 60s if needed
+    pingInterval: 25000,  // Interval for heartbeat pings
+    connectionStateRecovery: {
+        maxDisconnectionDuration: 60 * 1000, // Wait/hold state for 60 seconds
+        skipMiddlewares: true,                 // Skip auth middleware on successful recovery
+    }});
 
 //const game: TicTacToe = new TicTacToe();
 
 //map is structure of roomId : game: gameManager players: []
+const activeTimeouts = new Map();
 
 const gameRooms = new Map<number, GameManager>();
 /*TODO
@@ -40,6 +47,18 @@ const gameRooms = new Map<number, GameManager>();
 
 io.on('connection', (socket) => {
     console.log("a user has connected");
+
+    if (socket.recovered) {
+        const timeoutId = activeTimeouts.get(socket.id);
+        console.log("socket recovered");
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            activeTimeouts.delete(socket.id);
+            console.log(`Client ${socket.id} reconnected in time. Cleanup canceled.`);
+        }
+    }
+
+
     socket.on("test", (arg) => {
         console.log("1");
         socket.emit("yes", "yes");
@@ -93,8 +112,26 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on("disconnecting", () => {
-        gameRooms.delete(socket.data.room);
+    socket.on("disconnecting", (reason) => {
+        console.log("disconnected");
+        console.log(reason);
+        if (reason === "transport close" || reason === "ping timeout") {
+            console.log("hmmm");
+            const timeoutId = setTimeout(() => {
+                // --- YOUR CODE HERE ---
+                // This runs ONLY if 60 seconds pass without a successful recovery
+                //handlePermanentDisconnect(socket.id);
+                gameRooms.delete(socket.data.room);
+                activeTimeouts.delete(socket.id);
+            }, 60000); // 60 seconds
+
+            activeTimeouts.set(socket.id, timeoutId);
+        } else {
+            // If the client explicitly closed the connection (e.g., closed tab, called socket.disconnect())
+            // run your cleanup code immediately.
+            //handlePermanentDisconnect(socket.id);
+            gameRooms.delete(socket.data.room);
+        }
     });
 
     //this socket will handle game moves
@@ -154,7 +191,7 @@ io.on('connection', (socket) => {
             }
         }
     })
-})
+});
 
 
 server.listen(3000, () => {
