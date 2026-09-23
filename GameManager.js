@@ -16,7 +16,6 @@ var GameManager = (function () {
             this._players.push(p);
         else
             throw Error();
-        console.log(this._players);
     };
     GameManager.prototype.setStartingTurn = function (playerTurn) {
         if (playerTurn != 0 && playerTurn != 1) {

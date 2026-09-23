@@ -1,7 +1,7 @@
 import {TicTacToe} from "./TicTacToe";
 
-/**TODO
- *  - integrate sockets id into the player data
+/**
+ * A class that manages the game TicTacToe class and contains the room id
  */
 export class GameManager{
     private _game: TicTacToe;
@@ -20,14 +20,16 @@ export class GameManager{
         console.log("The turn generated has been: " + this._turn);
     }
 
+    /**
+     * Adds another player into the player list
+     * @param p This is the socket id of the player being added
+     */
     addPlayer(p: any){
         console.log(this._players.length);
         if(this._players.length < 2)
             this._players.push(p);
         else
             throw Error();
-
-        console.log(this._players);
     }
 
     setStartingTurn(playerTurn: number){
@@ -39,8 +41,9 @@ export class GameManager{
     }
 
 
-
-
+    /**
+     * Swaps the turns for the players.
+     */
     swapTurn(){
         if(this._turn == 1)
             this._turn = 0;

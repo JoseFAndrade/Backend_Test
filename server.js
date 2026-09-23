@@ -23,23 +23,14 @@ var io = new socket_io_1.Server(server, { cors: { origin: '*', methods: ['GET', 
 var activeTimeouts = new Map();
 var gameRooms = new Map();
 io.on('connection', function (socket) {
-    console.log("a user has connected");
     if (socket.recovered) {
         var timeoutId = activeTimeouts.get(socket.id);
-        console.log("socket recovered");
         if (timeoutId) {
             clearTimeout(timeoutId);
             activeTimeouts.delete(socket.id);
-            console.log("Client ".concat(socket.id, " reconnected in time. Cleanup canceled."));
         }
     }
-    socket.on("test", function (arg) {
-        console.log("1");
-        socket.emit("yes", "yes");
-    });
     socket.on("createRoom", function (id, callback) {
-        console.log("create room ran");
-        console.log(id);
         if (!gameRooms.has(id)) {
             socket.join(id.toString());
             gameRooms.set(id, new GameManager_1.GameManager(id, socket.id, new TicTacToe_1.TicTacToe()));
@@ -47,19 +38,15 @@ io.on('connection', function (socket) {
             socket.data.room = id;
         }
         else {
-            console.log("throw error");
             callback({ status: "error", message: "Room already exists. Try to join another room instead." });
         }
     });
     socket.on("joinRoom", function (id, callback) {
         if (countInRoom(String(id)) >= 2) {
-            console.log("Room is full");
             callback({ status: "error", message: "The room is currently full of players. Either try to create or join another room." });
         }
         else {
-            console.log("join room ran");
             if (!gameRooms.has(id)) {
-                console.log("room does not exist");
                 callback({ status: "error", message: "Sorry but the current room that you are trying to join does not exist. Make it instead" });
             }
             else {
@@ -67,7 +54,6 @@ io.on('connection', function (socket) {
                 socket.join(id.toString());
                 gameRooms.get(id).addPlayer(socket.id);
                 socket.emit("player:joined-room", { board: gameRooms.get(id).getGame.getGrid() });
-                console.log(socket.id);
                 socket.to(id.toString()).emit("room:player-joined", socket.id, "A player has joined the room");
                 callback({ status: 'ok', message: "You have successfully joined the room." });
                 io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
@@ -75,10 +61,7 @@ io.on('connection', function (socket) {
         }
     });
     socket.on("disconnecting", function (reason) {
-        console.log("disconnected");
-        console.log(reason);
         if (reason === "transport close" || reason === "ping timeout") {
-            console.log("hmmm");
             var timeoutId = setTimeout(function () {
                 gameRooms.delete(socket.data.room);
                 activeTimeouts.delete(socket.id);
@@ -90,17 +73,12 @@ io.on('connection', function (socket) {
         }
     });
     socket.on("gameMove", function (id, moveInfo, callback) {
-        console.log("game move ran");
         if (!gameRooms.has(id)) {
             callback({ status: 'error-connection', message: "The connection to the main client has dropped" });
             return;
         }
         var manager = gameRooms.get(id);
         var game = manager.getGame;
-        console.log(manager.getPlayerTurn());
-        console.log(typeof manager.getPlayerTurn());
-        console.log(socket.id);
-        console.log(typeof socket.id);
         if (manager.players.length !== 2) {
             callback({ status: "error-two", message: "Not enough players" });
         }
@@ -123,7 +101,12 @@ io.on('connection', function (socket) {
                 callback({ status: "ok", message: "The move was successful." });
                 manager.swapTurn();
                 io.in(id.toString()).emit("game_update:game-move", game.getGrid(), x, y, playerId, "the player: " + playerId + " has successfully made a move");
-                io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
+                if (!game.checkPlayable()) {
+                    io.in(id.toString()).emit("game_update:game-end", game.checkWin(), "The game has ended and there are no more actions left");
+                }
+                else {
+                    io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
+                }
             }
         }
     });

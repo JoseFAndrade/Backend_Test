@@ -1,3 +1,6 @@
+/**
+ * Class that handles the logic relating to the tic-tac-toe game
+ */
 export class TicTacToe{
     private grid: number[][];
 
@@ -7,30 +10,22 @@ export class TicTacToe{
 
     constructor() {
         this.grid = [[-1,-1,-1],[-1,-1,-1],[-1,-1,-1]];
-        /*
-        for(let i = 0; i < 2; i++){
-          for(let y = 0; y < 2; y ++){
-            this.grid[i][y] = -1;
-          }
-        }*/
         this.turn = 0;
     }
 
+    /**
+     * Places a piece in the board
+     * @param x A position on the x-axis
+     * @param y A position on the y-axis
+     * @param turn Whose turn it is. This represents the socket id
+     */
     setPiece(x: number, y: number, turn: number){
         this.grid[x][y] = turn;
     }
 
-    swithTurn(){
-        if(this.turn === 1)
-            this.turn = 0
-        else
-            this.turn = 1;
-    }
-
-    getTurn(){
-        return this.turn;
-    }
-
+    /**
+     * Returns what the current game looks like.
+     */
     getGrid(){
         return this.grid;
     }
@@ -41,12 +36,14 @@ export class TicTacToe{
      * @param y A number reflecting what column
      * @param userId A number reflecting the id of the user who is making the move
      */
-    //todo I need to start to move these things over to the game manager because that is what will be in charge of all of this
     checkMove(x: number, y:number, userId: number){
         return this.grid[x][y] == -1;
     }
 
-    //this function will return whether there is still playable options on the board
+
+    /**
+     * This will check if there is any possible moves left to be made on the board.
+     */
     checkPlayable(): boolean{
         if(this.checkWin() !== -1)
             return false;
@@ -60,11 +57,12 @@ export class TicTacToe{
         return false;
     }
 
+    /**
+     * Returns a winner if there is one. What is being returned is the socket id. If there is no winner then
+     * -1 will be returned instead.
+     */
     checkWin(): number{
         //win condition is 3 in in a row | this can be up/down/diagonal
-
-        console.log("check within a column");
-        console.log(this.grid);
 
         //check within a row
         for(let i = 0; i <= 2; i++){
@@ -85,10 +83,8 @@ export class TicTacToe{
                 return prev; //returns the number of the winner in this case
         }
 
-        console.log("check within a row")
         //check within a column
         for(let i = 0; i <= 2; i++){
-            console.log("x");
             let continues: boolean = true;
             let prev = -2;
             for(let y = 0; y <= 2; y++){
@@ -96,13 +92,11 @@ export class TicTacToe{
                     prev = this.grid[y][i];
                 }
                 else{
-                    console.log("break");
                     continues = false;
                     break;
                 }
             }
             if(continues){
-                console.log("this is the issue");
                 return prev;
 
             }

@@ -46,28 +46,23 @@ const gameRooms = new Map<number, GameManager>();
  */
 
 io.on('connection', (socket) => {
-    console.log("a user has connected");
 
+    /**This is here to deal with sockets reconnecting, while it is not a perfect solution it should deal with the way
+     * that phone users sockets disconnect when switching applications
+     */
     if (socket.recovered) {
         const timeoutId = activeTimeouts.get(socket.id);
-        console.log("socket recovered");
         if (timeoutId) {
             clearTimeout(timeoutId);
             activeTimeouts.delete(socket.id);
-            console.log(`Client ${socket.id} reconnected in time. Cleanup canceled.`);
         }
     }
 
-
-    socket.on("test", (arg) => {
-        console.log("1");
-        socket.emit("yes", "yes");
-    });
-
+    /**
+     * This socket will listen for an id and create a room with that id. It will then confirm with the user using a
+     * callback. Or it will deny it if a room already exists with that id.
+     */
     socket.on("createRoom", (id: number, callback) => {
-        console.log("create room ran");
-        console.log(id);
-
         if(!gameRooms.has(id)){
 
             socket.join(id.toString());
@@ -77,23 +72,21 @@ io.on('connection', (socket) => {
             socket.data.room = id;
         }
         else{
-            console.log("throw error");
             callback({status: "error", message: "Room already exists. Try to join another room instead."});
         }
     });
 
-    //we need to keep the emit here because its going to be necessary for the receiving of data to happen
+    /**
+     * This will listen for an id of a room and check if a room of that id has been formed. If it has it will then check
+     * if the room has space for the current user. It returns a callback depending on whether the attempt worked or not.
+     */
     socket.on("joinRoom", (id: number, callback ) => {
         if(countInRoom(String(id)) >= 2){
-            console.log("Room is full");
             callback({status: "error", message: "The room is currently full of players. Either try to create or join another room."})
             //socket.emit("room:full-players", "Sorry but the room is currently full");
         }
         else{
-            console.log("join room ran");
             if(!gameRooms.has(id)){ //make sure to check if the game room exists
-                console.log("room does not exist");
-
                 callback({status: "error", message: "Sorry but the current room that you are trying to join does not exist. Make it instead"});
             }
             else{
@@ -102,7 +95,6 @@ io.on('connection', (socket) => {
                 gameRooms.get(id).addPlayer(socket.id);
                 //send the data to the client about the board
                 socket.emit("player:joined-room", {board: gameRooms.get(id).getGame.getGrid()});
-                console.log(socket.id);
                 socket.to(id.toString()).emit("room:player-joined", socket.id,  "A player has joined the room");
                 callback({status:'ok', message: "You have successfully joined the room."});
 
@@ -112,15 +104,14 @@ io.on('connection', (socket) => {
         }
     });
 
+    /**
+     * Added this socket in order to auto delete rooms so that they won't be taking up space on a host closing the tab.
+     * In event of the user disconnecting by accident there is a timeout that starts to count down and after a while it
+     * will close the connection.
+     */
     socket.on("disconnecting", (reason) => {
-        console.log("disconnected");
-        console.log(reason);
         if (reason === "transport close" || reason === "ping timeout") {
-            console.log("hmmm");
             const timeoutId = setTimeout(() => {
-                // --- YOUR CODE HERE ---
-                // This runs ONLY if 60 seconds pass without a successful recovery
-                //handlePermanentDisconnect(socket.id);
                 gameRooms.delete(socket.data.room);
                 activeTimeouts.delete(socket.id);
             }, 60000); // 60 seconds
@@ -134,12 +125,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    //this socket will handle game moves
-    //going to assume for now that move info is some sort of [[x,y], turnNumber]
+    /**
+     * This will handle all the game move information and sending the data to the logic that keeps the tic-tac-toe
+     * game running. It ends up replying with either an error if the move is invalid or an ok if the move was successful.
+     * It then relays the information to the rest of the clients connected in the room. It will also always check if
+     * the game is over after a move in order to keep users updated and not wait until after another user makes a move.
+     * It also handles making sure that the correct user is the one sending the moves.
+     */
     socket.on("gameMove", (id: number, moveInfo, callback) => {
-
-        console.log("game move ran");
-
         // a check to see if the game room does not exist -> this will only ever run if there is some sort of disconnect issue with the host
         if(!gameRooms.has(id)){
             callback({status: 'error-connection', message: "The connection to the main client has dropped"});
@@ -148,11 +141,6 @@ io.on('connection', (socket) => {
 
         let manager = gameRooms.get(id);
         let game = manager.getGame;
-
-        console.log(manager.getPlayerTurn());
-        console.log(typeof manager.getPlayerTurn());
-        console.log(socket.id);
-        console.log(typeof socket.id);
 
         if(manager.players.length !== 2){
             callback({status: "error-two", message:"Not enough players"});
@@ -165,9 +153,7 @@ io.on('connection', (socket) => {
         }
         //else if(game.getTurn() === moveInfo[1]){
         else if(!(manager.getPlayerTurn() === socket.id.trim())) { //check to make sure that the current players turn socket id is the same as the msg socket id
-            //TODO need to make sure to test out how to do this in a different ways | socket checking but after postman
             callback({status: 'error', message: "Please wait your turn"});
-            //socket.emit("game_update:illegal-move", "Please wait for your turn. It is not your turn yet");
         }
         else{
             var playerId = moveInfo[0];
@@ -175,8 +161,6 @@ io.on('connection', (socket) => {
             var y = moveInfo[1][1];
 
             if(!game.checkMove(x, y, playerId)){
-                //add move details to the response
-                //io.in(id).emit("game_update:invalid-move", "The move is invalid because the select position is not open.", moveInfo);
                 callback({status: "error", message: "The move that you are trying to make is invalid."});
             }
             else { //the piece is placeable | update game | send update to connected sockets with room id
@@ -184,10 +168,13 @@ io.on('connection', (socket) => {
                 game.setPiece(x,y, playerId);
                 callback({status: "ok", message: "The move was successful."});
                 manager.swapTurn();
-                //update the room with the move
-                //io.to(id.toString()).emit("game_update:game-move", "testing");
                 io.in(id.toString()).emit("game_update:game-move", game.getGrid(), x, y, playerId,  "the player: " + playerId +" has successfully made a move");
-                io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
+                if(!game.checkPlayable()){
+                    io.in(id.toString()).emit("game_update:game-end", game.checkWin(), "The game has ended and there are no more actions left");
+                }
+                else{
+                    io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
+                }
             }
         }
     })

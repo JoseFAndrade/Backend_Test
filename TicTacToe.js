@@ -9,15 +9,6 @@ var TicTacToe = (function () {
     TicTacToe.prototype.setPiece = function (x, y, turn) {
         this.grid[x][y] = turn;
     };
-    TicTacToe.prototype.swithTurn = function () {
-        if (this.turn === 1)
-            this.turn = 0;
-        else
-            this.turn = 1;
-    };
-    TicTacToe.prototype.getTurn = function () {
-        return this.turn;
-    };
     TicTacToe.prototype.getGrid = function () {
         return this.grid;
     };
@@ -36,8 +27,6 @@ var TicTacToe = (function () {
         return false;
     };
     TicTacToe.prototype.checkWin = function () {
-        console.log("check within a column");
-        console.log(this.grid);
         for (var i = 0; i <= 2; i++) {
             var continues = true;
             var prev = this.grid[i][0];
@@ -54,9 +43,7 @@ var TicTacToe = (function () {
             if (continues)
                 return prev;
         }
-        console.log("check within a row");
         for (var i = 0; i <= 2; i++) {
-            console.log("x");
             var continues = true;
             var prev = -2;
             for (var y = 0; y <= 2; y++) {
@@ -64,13 +51,11 @@ var TicTacToe = (function () {
                     prev = this.grid[y][i];
                 }
                 else {
-                    console.log("break");
                     continues = false;
                     break;
                 }
             }
             if (continues) {
-                console.log("this is the issue");
                 return prev;
             }
         }
