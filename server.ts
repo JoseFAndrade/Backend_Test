@@ -97,7 +97,7 @@ io.on('connection', (socket) => {
                 socket.emit("player:joined-room", {board: gameRooms.get(id).getGame.getGrid()});
                 socket.to(id.toString()).emit("room:player-joined", socket.id,  "A player has joined the room");
                 callback({status:'ok', message: "You have successfully joined the room."});
-
+                io.in(id.toString()).emit("lobby_update:player-list", gameRooms.get(id).players);
                 io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
             }
 
