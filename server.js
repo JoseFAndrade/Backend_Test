@@ -23,6 +23,8 @@ var io = new socket_io_1.Server(server, { cors: { origin: '*', methods: ['GET', 
 var activeTimeouts = new Map();
 var gameRooms = new Map();
 io.on('connection', function (socket) {
+    console.log("new user joined");
+    socket.emit("socketID", socket.id);
     if (socket.recovered) {
         var timeoutId = activeTimeouts.get(socket.id);
         if (timeoutId) {

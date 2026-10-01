@@ -47,6 +47,8 @@ const gameRooms = new Map<number, GameManager>();
 
 io.on('connection', (socket) => {
 
+    console.log("new user joined");
+    socket.emit("socketID", socket.id);
     /**This is here to deal with sockets reconnecting, while it is not a perfect solution it should deal with the way
      * that phone users sockets disconnect when switching applications
      */
