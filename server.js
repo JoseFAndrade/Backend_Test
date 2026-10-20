@@ -21,6 +21,7 @@ var io = new socket_io_1.Server(server, { cors: { origin: '*', methods: ['GET', 
         skipMiddlewares: true,
     } });
 var activeTimeouts = new Map();
+var nickNames = new Map();
 var gameRooms = new Map();
 io.on('connection', function (socket) {
     console.log("new user joined");
@@ -32,6 +33,11 @@ io.on('connection', function (socket) {
             activeTimeouts.delete(socket.id);
         }
     }
+    socket.on("nickname", function (socketID, nickname) {
+        console.log("changing names now");
+        nickNames.set(socketID, nickname);
+        socket.data.username = nickname;
+    });
     socket.on("createRoom", function (id, callback) {
         if (!gameRooms.has(id)) {
             socket.join(id.toString());
@@ -52,13 +58,22 @@ io.on('connection', function (socket) {
                 callback({ status: "error", message: "Sorry but the current room that you are trying to join does not exist. Make it instead" });
             }
             else {
-                console.log("the id of who joined was: " + socket.id);
+                console.log(socket.data.username);
+                if (socket.data.username) {
+                    console.log("user has username");
+                    console.log("the id of who joined was: " + socket.data.username);
+                }
+                else
+                    console.log("the id of who joined was: " + socket.data.username);
                 socket.join(id.toString());
                 gameRooms.get(id).addPlayer(socket.id);
                 socket.emit("player:joined-room", { board: gameRooms.get(id).getGame.getGrid() });
-                socket.to(id.toString()).emit("room:player-joined", socket.id, "A player has joined the room");
+                if (socket.data.username)
+                    socket.to(id.toString()).emit("room:player-joined", socket.data.username, "A player has joined the room");
+                else
+                    socket.to(id.toString()).emit("room:player-joined", socket.id, "A player has joined the room");
                 callback({ status: 'ok', message: "You have successfully joined the room." });
-                io.in(id.toString()).emit("lobby_update:player-list", gameRooms.get(id).players);
+                io.in(id.toString()).emit("lobby_update:player-list", helper(nickNames, gameRooms.get(id).players));
                 io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
             }
         }
@@ -120,5 +135,15 @@ server.listen(3000, function () {
 function countInRoom(room) {
     var _a;
     return ((_a = io.of("/").adapter.rooms.get(room)) === null || _a === void 0 ? void 0 : _a.size) || 0;
+}
+function helper(map, userList) {
+    var res = [];
+    userList.forEach(function (name) {
+        if (map.has(name))
+            res.push(map.get(name));
+        else
+            res.push(name);
+    });
+    return res;
 }
 //# sourceMappingURL=server.js.map
