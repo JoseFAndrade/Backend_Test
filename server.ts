@@ -25,6 +25,7 @@ const io = new Server(server, {cors: {origin: '*', methods: ['GET', 'POST']},
 //map is structure of roomId : game: gameManager players: []
 const activeTimeouts = new Map();
 
+//we kept this here for now because it cant go in game manager since that is  game instance based
 const nickNames = new Map<string, string>() //maps a user id to their nickname that they choose
 const gameRooms = new Map<number, GameManager>();
 /*TODO
@@ -90,6 +91,7 @@ io.on('connection', (socket) => {
      * if the room has space for the current user. It returns a callback depending on whether the attempt worked or not.
      */
     socket.on("joinRoom", (id: number, callback ) => {
+        var playerName: string = nickNames.has(socket.id)? nickNames.get(socket.id) : socket.id;
         if(countInRoom(String(id)) >= 2){
             callback({status: "error", message: "The room is currently full of players. Either try to create or join another room."})
             //socket.emit("room:full-players", "Sorry but the room is currently full");
@@ -99,23 +101,16 @@ io.on('connection', (socket) => {
                 callback({status: "error", message: "Sorry but the current room that you are trying to join does not exist. Make it instead"});
             }
             else{
-                console.log(socket.data.username);
-                if(socket.data.username){
-                    console.log("user has username");
-                    console.log("the id of who joined was: " + socket.data.username);
-                }
-                else
-                    console.log("the id of who joined was: " + socket.data.username);
                 socket.join(id.toString());
+
+                //the game room will always deal with just the player socket id, never with the actual nickname of the user
                 gameRooms.get(id).addPlayer(socket.id);
                 //send the data to the client about the board
                 socket.emit("player:joined-room", {board: gameRooms.get(id).getGame.getGrid()});
-                if(socket.data.username)
-                    socket.to(id.toString()).emit("room:player-joined", socket.data.username,  "A player has joined the room");
-                else
-                    socket.to(id.toString()).emit("room:player-joined", socket.id,  "A player has joined the room");
+
+                socket.to(id.toString()).emit("room:player-joined", playerName,  "A player has joined the room");
                 callback({status:'ok', message: "You have successfully joined the room."});
-                io.in(id.toString()).emit("lobby_update:player-list", helper(nickNames, gameRooms.get(id).players));
+                io.in(id.toString()).emit("lobby_update:player-list", socketIdToNickname(nickNames, gameRooms.get(id).players));
                 io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
             }
 
@@ -210,7 +205,7 @@ function countInRoom(room: string) {
 
 
 
-function helper(map: Map<string, string>, userList: any[]){
+function socketIdToNickname(map: Map<string, string>, userList: any[]){
     var res: any[] = [];
     userList.forEach((name) =>{
         if(map.has(name))

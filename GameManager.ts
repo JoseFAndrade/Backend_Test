@@ -20,6 +20,7 @@ export class GameManager{
         console.log("The turn generated has been: " + this._turn);
     }
 
+
     /**
      * Adds another player into the player list
      * @param p This is the socket id of the player being added

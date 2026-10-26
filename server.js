@@ -50,6 +50,7 @@ io.on('connection', function (socket) {
         }
     });
     socket.on("joinRoom", function (id, callback) {
+        var playerName = nickNames.has(socket.id) ? nickNames.get(socket.id) : socket.id;
         if (countInRoom(String(id)) >= 2) {
             callback({ status: "error", message: "The room is currently full of players. Either try to create or join another room." });
         }
@@ -58,22 +59,12 @@ io.on('connection', function (socket) {
                 callback({ status: "error", message: "Sorry but the current room that you are trying to join does not exist. Make it instead" });
             }
             else {
-                console.log(socket.data.username);
-                if (socket.data.username) {
-                    console.log("user has username");
-                    console.log("the id of who joined was: " + socket.data.username);
-                }
-                else
-                    console.log("the id of who joined was: " + socket.data.username);
                 socket.join(id.toString());
                 gameRooms.get(id).addPlayer(socket.id);
                 socket.emit("player:joined-room", { board: gameRooms.get(id).getGame.getGrid() });
-                if (socket.data.username)
-                    socket.to(id.toString()).emit("room:player-joined", socket.data.username, "A player has joined the room");
-                else
-                    socket.to(id.toString()).emit("room:player-joined", socket.id, "A player has joined the room");
+                socket.to(id.toString()).emit("room:player-joined", playerName, "A player has joined the room");
                 callback({ status: 'ok', message: "You have successfully joined the room." });
-                io.in(id.toString()).emit("lobby_update:player-list", helper(nickNames, gameRooms.get(id).players));
+                io.in(id.toString()).emit("lobby_update:player-list", socketIdToNickname(nickNames, gameRooms.get(id).players));
                 io.in(id.toString()).emit("game_update:player-turn", gameRooms.get(id).getPlayerTurn());
             }
         }
@@ -136,7 +127,7 @@ function countInRoom(room) {
     var _a;
     return ((_a = io.of("/").adapter.rooms.get(room)) === null || _a === void 0 ? void 0 : _a.size) || 0;
 }
-function helper(map, userList) {
+function socketIdToNickname(map, userList) {
     var res = [];
     userList.forEach(function (name) {
         if (map.has(name))
